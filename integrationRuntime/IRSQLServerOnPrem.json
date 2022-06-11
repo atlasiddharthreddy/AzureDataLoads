@@ -1,0 +1,7 @@
+{
+	"name": "IRSQLServerOnPrem",
+	"properties": {
+		"type": "SelfHosted",
+		"description": "To Connect SQL Server On-Premise"
+	}
+}

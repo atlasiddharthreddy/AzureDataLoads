@@ -1,0 +1,9 @@
+{
+	"name": "ssisadftest",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "a8baecd8-1c4a-4b3a-8c73-9a908504063b",
+		"tenantId": "79170102-c4ea-4bb2-a726-ae3231cf1881"
+	}
+}

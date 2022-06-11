@@ -1,0 +1,372 @@
+{
+	"name": "DImCurrency_Pip",
+	"properties": {
+		"activities": [
+			{
+				"name": "InsertintoPackageLog",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "SetExecId",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[PackageLogInsert]",
+					"storedProcedureParameters": {
+						"PExecID": {
+							"value": {
+								"value": "@pipeline().parameters.ParentId",
+								"type": "Expression"
+							},
+							"type": "Int64"
+						},
+						"PName": {
+							"value": {
+								"value": "@variables('PackageName')",
+								"type": "Expression"
+							},
+							"type": "String"
+						},
+						"StartTime": {
+							"value": {
+								"value": "@utcNow()",
+								"type": "Expression"
+							},
+							"type": "DateTime"
+						},
+						"Status": {
+							"value": "Running",
+							"type": "String"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "GetControlLogExecId",
+				"type": "Script",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"linkedServiceName": {
+					"referenceName": "AzureSqlDatabase",
+					"type": "LinkedServiceReference"
+				},
+				"typeProperties": {
+					"scripts": [
+						{
+							"parameters": [
+								{
+									"name": "ExecID",
+									"type": "Int64",
+									"value": null,
+									"direction": "Output"
+								}
+							],
+							"type": "Query",
+							"text": "SELECT @ExecID=(ISNULL(MAX(ExecutionId),0)+1) FROM [Audit].[PackageLog]\n"
+						}
+					]
+				}
+			},
+			{
+				"name": "SetExecId",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "GetControlLogExecId",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "EexcId",
+					"value": {
+						"value": "@string(activity('GetControlLogExecId').output.outputParameters.ExecID)",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "CheckForNewRecords",
+				"type": "Lookup",
+				"dependsOn": [
+					{
+						"activity": "InsertintoPackageLog",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "Declare @RC INT\nExec CheckForNewRecords 'Stg_Currency','Currency','CurrencyCode','Name,ModifiedDate',@RC output\nselect @RC as Flag",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "LookUP",
+						"type": "DatasetReference"
+					}
+				}
+			},
+			{
+				"name": "If Condition",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "CheckForNewRecords",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(activity('CheckForNewRecords').output.firstRow.Flag,1)\n",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "updateintoPackageLog_False",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[dbo].[PackageLogUpdate]",
+								"storedProcedureParameters": {
+									"EndTime": {
+										"value": {
+											"value": "@utcNow()",
+											"type": "Expression"
+										},
+										"type": "DateTime"
+									},
+									"Id": {
+										"value": {
+											"value": "@variables('EexcId')",
+											"type": "Expression"
+										},
+										"type": "Int64"
+									},
+									"RowsInserted": {
+										"value": "0",
+										"type": "Int64"
+									},
+									"RowsUpdated": {
+										"value": "0",
+										"type": "Int64"
+									},
+									"Status": {
+										"value": "Success",
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureSqlDatabase",
+								"type": "LinkedServiceReference"
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "Currency_DF",
+							"type": "ExecuteDataFlow",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "1.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataflow": {
+									"referenceName": "DimCurrency_DF",
+									"type": "DataFlowReference"
+								},
+								"compute": {
+									"coreCount": 8,
+									"computeType": "General"
+								},
+								"traceLevel": "None",
+								"cacheSinks": {
+									"firstRowOnly": true
+								}
+							}
+						},
+						{
+							"name": "updateintoPackageLog",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "Currency_DF",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[dbo].[PackageLogUpdate]",
+								"storedProcedureParameters": {
+									"EndTime": {
+										"value": {
+											"value": "@utcNow()",
+											"type": "Expression"
+										},
+										"type": "DateTime"
+									},
+									"Id": {
+										"value": {
+											"value": "@variables('EexcId')",
+											"type": "Expression"
+										},
+										"type": "Int64"
+									},
+									"RowsInserted": {
+										"value": {
+											"value": "@int(activity('Currency_DF').output.runStatus.metrics.sink.stages[0].recordsRead)",
+											"type": "Expression"
+										},
+										"type": "Int64"
+									},
+									"RowsUpdated": {
+										"value": "0",
+										"type": "Int64"
+									},
+									"Status": {
+										"value": "Success",
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureSqlDatabase",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "updateintoPackageLogOnFailure",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "Currency_DF",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "7.00:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[dbo].[PackageLogUpdate]",
+								"storedProcedureParameters": {
+									"EndTime": {
+										"value": {
+											"value": "@utcNow()",
+											"type": "Expression"
+										},
+										"type": "DateTime"
+									},
+									"Id": {
+										"value": "",
+										"type": "Int64"
+									},
+									"RowsInserted": {
+										"value": "",
+										"type": "Int64"
+									},
+									"RowsUpdated": {
+										"value": "",
+										"type": "Int64"
+									},
+									"Status": {
+										"value": "Failed",
+										"type": "String"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "AzureSqlDatabase",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"ParentId": {
+				"type": "int",
+				"defaultValue": 0
+			}
+		},
+		"variables": {
+			"PackageName": {
+				"type": "String",
+				"defaultValue": "DimCurrency"
+			},
+			"EexcId": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2022-06-10T23:53:13Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

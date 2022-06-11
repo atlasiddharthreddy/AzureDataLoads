@@ -1,0 +1,118 @@
+{
+	"name": "DimCurrency_DF",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "Stage_Azure_Curr_DF_Source",
+						"type": "DatasetReference"
+					},
+					"name": "source"
+				},
+				{
+					"dataset": {
+						"referenceName": "CurrencyTable_Dest",
+						"type": "DatasetReference"
+					},
+					"name": "AzureDFDB"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "CurrencyTable_Dest",
+						"type": "DatasetReference"
+					},
+					"name": "sink"
+				},
+				{
+					"dataset": {
+						"referenceName": "CurrencyTable_Dest",
+						"type": "DatasetReference"
+					},
+					"name": "AzureDFDest"
+				}
+			],
+			"transformations": [
+				{
+					"name": "DeriveHash"
+				},
+				{
+					"name": "LookUp"
+				},
+				{
+					"name": "ConditionalSplit"
+				},
+				{
+					"name": "AlterRow"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          CurrencyCode as string,",
+				"          Name as string,",
+				"          ModifiedDate as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     inferDriftedColumnTypes: true,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> source",
+				"source(output(",
+				"          CurrencyCode as string,",
+				"          Name as string,",
+				"          ModifiedDate as timestamp",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     isolationLevel: 'READ_UNCOMMITTED',",
+				"     format: 'table') ~> AzureDFDB",
+				"source derive(Hash = toBinary(md5(Name)),",
+				"          ModifiedDate = currentDate()) ~> DeriveHash",
+				"DeriveHash, AzureDFDB lookup(source@CurrencyCode == AzureDFDB@CurrencyCode,",
+				"     multiple: false,",
+				"     pickup: 'any',",
+				"     broadcast: 'auto')~> LookUp",
+				"LookUp split(isNull(AzureDFDB@CurrencyCode),",
+				"     isNull(AzureDFDB@CurrencyCode)&&isNull(Hash),",
+				"     disjoint: true) ~> ConditionalSplit@(NewRecords, Update, NoUpdateInsert)",
+				"ConditionalSplit@Update alterRow(updateIf(true())) ~> AlterRow",
+				"ConditionalSplit@NewRecords sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          CurrencyCode = ConditionalSplit@NewRecords@CurrencyCode,",
+				"          Name = ConditionalSplit@NewRecords@Name,",
+				"          ModifiedDate = ConditionalSplit@NewRecords@ModifiedDate,",
+				"          HashCombined = Hash",
+				"     )) ~> sink",
+				"AlterRow sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:true,",
+				"     upsertable:false,",
+				"     keys:['CurrencyCode'],",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     errorHandlingOption: 'stopOnFirstError',",
+				"     mapColumn(",
+				"          CurrencyCode = ConditionalSplit@Update@CurrencyCode,",
+				"          Name = ConditionalSplit@Update@Name,",
+				"          ModifiedDate = ConditionalSplit@Update@ModifiedDate,",
+				"          HashCombined = Hash",
+				"     )) ~> AzureDFDest"
+			]
+		}
+	}
+}

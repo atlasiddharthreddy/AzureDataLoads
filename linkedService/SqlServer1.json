@@ -1,0 +1,18 @@
+{
+	"name": "SqlServer1",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"description": "To Connect SQL server Online",
+		"annotations": [],
+		"type": "SqlServer",
+		"typeProperties": {
+			"connectionString": "integrated security=True;data source=SIDDHARTH;initial catalog=AdventureWorks2019",
+			"userName": "siddharthreddyatla@gmail.com",
+			"encryptedCredential": "eyJDcmVkZW50aWFsSWQiOiIxZmNkODViMi04N2I5LTQ5N2QtYjY2NS0zM2RkNzEwNDEzYWYiLCJWZXJzaW9uIjoiMi4wIiwiQ2xhc3NUeXBlIjoiTWljcm9zb2Z0LkRhdGFQcm94eS5Db3JlLkludGVyU2VydmljZURhdGFDb250cmFjdC5DcmVkZW50aWFsU1UwNkNZMTQifQ=="
+		},
+		"connectVia": {
+			"referenceName": "IRSQLServerOnPrem",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}
