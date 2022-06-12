@@ -569,7 +569,7 @@
 											},
 											"RowsInserted": {
 												"value": {
-													"value": "@int(activity('Currency_DF').output.runStatus.metrics.sink.stages[0].recordsRead)",
+													"value": "@int(activity('Currency_DF').output.runStatus.metrics.sink.stages[2].recordsRead)",
 													"type": "Expression"
 												},
 												"type": "Int64"
