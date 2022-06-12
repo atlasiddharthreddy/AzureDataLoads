@@ -50,6 +50,9 @@
 				}
 			],
 			"scriptLines": [
+				"parameters{",
+				"     RowCount as integer (toInteger(RowCount_NR))",
+				"}",
 				"source(output(",
 				"          CurrencyCode as string,",
 				"          Name as string,",
@@ -83,7 +86,7 @@
 				"     validateSchema: false,",
 				"     deletable:false,",
 				"     insertable:true,",
-				"     updateable:false,",
+				"     updateable:true,",
 				"     upsertable:false,",
 				"     format: 'table',",
 				"     skipDuplicateMapInputs: true,",
