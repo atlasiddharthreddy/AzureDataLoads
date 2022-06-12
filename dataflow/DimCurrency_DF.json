@@ -50,9 +50,6 @@
 				}
 			],
 			"scriptLines": [
-				"parameters{",
-				"     RowCount as integer (toInteger(RowCount_NR))",
-				"}",
 				"source(output(",
 				"          CurrencyCode as string,",
 				"          Name as string,",
