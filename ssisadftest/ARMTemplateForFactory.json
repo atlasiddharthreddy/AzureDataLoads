@@ -1086,7 +1086,7 @@
 						"     pickup: 'any',",
 						"     broadcast: 'auto')~> LookUp",
 						"LookUp split(isNull(AzureDFDB@CurrencyCode),",
-						"     isNull(AzureDFDB@CurrencyCode)&& notEquals(HashCombined,Hash),",
+						"     equals(AzureDFDB@CurrencyCode, source@CurrencyCode)&& notEquals(HashCombined,Hash),",
 						"     disjoint: true) ~> ConditionalSplit@(NewRecords, Update, NoUpdateInsert)",
 						"ConditionalSplit@Update alterRow(updateIf(true())) ~> AlterRow",
 						"ConditionalSplit@NewRecords sink(allowSchemaDrift: true,",
