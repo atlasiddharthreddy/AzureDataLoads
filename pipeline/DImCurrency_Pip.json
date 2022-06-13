@@ -274,13 +274,16 @@
 									},
 									"RowsInserted": {
 										"value": {
-											"value": "@int(activity('Currency_DF').output.runStatus.metrics.sink.stages[0].recordsRead)",
+											"value": "@int(activity('Currency_DF').output.runStatus.metrics.sink.stages[1].recordsWritten)",
 											"type": "Expression"
 										},
 										"type": "Int64"
 									},
 									"RowsUpdated": {
-										"value": "0",
+										"value": {
+											"value": "@int(activity('Currency_DF').output.runStatus.metrics.sink.stages[1].recordsWritten)",
+											"type": "Expression"
+										},
 										"type": "Int64"
 									},
 									"Status": {
