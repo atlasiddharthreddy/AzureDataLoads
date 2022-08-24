@@ -1,0 +1,48 @@
+{
+	"name": "ExectueSSISPackage",
+	"properties": {
+		"activities": [
+			{
+				"name": "SSISRun",
+				"type": "ExecuteSSISPackage",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"packageLocation": {
+						"packagePath": "Adventure_ETL/Adventure_ETL/ControlPackage.dtsx",
+						"type": "SSISDB"
+					},
+					"runtime": "x86",
+					"environmentPath": null,
+					"connectVia": {
+						"referenceName": "SSISIntegrationRuntime",
+						"type": "IntegrationRuntimeReference"
+					},
+					"loggingLevel": "Basic",
+					"projectParameters": {
+						"ExternalFeedLocation": {
+							"value": "C:\\Users\\14694\\Documents\\ADV_SSIS\\Feeds\\"
+						},
+						"Password": {
+							"value": {
+								"type": "SecureString",
+								"value": "**********"
+							}
+						},
+						"ServerName": {
+							"value": "SIDDHARTH"
+						}
+					}
+				}
+			}
+		],
+		"annotations": []
+	}
+}
